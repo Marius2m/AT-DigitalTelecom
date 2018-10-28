@@ -1,0 +1,7 @@
+
++CSQ: 21,0
++COPN: "310000", "Cinti Bell"
++COPN: "31140", "USA - Commnet"
++COPN: "310740", "TELEMETRIX"
+
+OK
