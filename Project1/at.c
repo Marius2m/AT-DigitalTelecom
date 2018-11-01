@@ -1,11 +1,8 @@
 #include <stdio.h>
-#include <stdarg.h>
-#include "ATHeader.h"
+#include "at.h"
 
 AT_COMMAND_DATA response;
-
-STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
-{
+STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character){
 	static uint32_t state			 = 0;
 	static uint32_t index_string_arr = 0;
 
@@ -14,6 +11,10 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 			if (current_character == 0x0D){ 
 				state = 1;
 			}
+			else {
+				printf("ERROR: Missing <CR> in the beginning.\n");
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
 			break;
 		}
 		case 1:{
@@ -21,6 +22,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 2;
 			}
 			else{
+				printf("ERROR: Missing <LF> after <CR> in the beginning.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -36,6 +38,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 12;
 			}
 			else{
+				printf("ERROR: Missing OK/ ERROR/ + after <CR> <LF>.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -48,6 +51,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 4;
 			}
 			else {
+				printf("ERROR: Missing OK.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -57,6 +61,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 5;
 			}
 			else {
+				printf("ERROR: Missing <CR> after OK.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -67,6 +72,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				return STATE_MACHINE_READY_OK;
 			}
 			else {
+				printf("ERROR: Missing <LF> after OK <CR>.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -81,6 +87,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 7;
 			}
 			else {
+				printf("ERROR: Missing ERROR.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -90,6 +97,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 8;
 			}
 			else {
+				printf("ERROR: Missing ERROR.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -99,6 +107,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 9;
 			}
 			else {
+				printf("ERROR: Missing ERROR.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -108,6 +117,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 10;
 			}
 			else {
+				printf("ERROR: Missing ERROR.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -117,6 +127,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 11;
 			}
 			else {
+				printf("ERROR: Missing <CR> after ERROR.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -127,6 +138,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				return STATE_MACHINE_READY_OK;
 			}
 			else {
+				printf("ERROR: Missing <LF> after ERROR <CR>.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -141,8 +153,10 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 			if (current_character >= 32 && current_character <= 126) {
 				state = 12;
 				if (response.line_count < AT_COMMAND_MAX_LINES) {
-					response.data[response.line_count][index_string_arr] = current_character;
-					index_string_arr++;
+					if (index_string_arr < AT_COMMAND_MAX_LINE_SIZE) {
+						response.data[response.line_count][index_string_arr] = current_character;
+						index_string_arr++;
+					}
 				}
 			}
 			else if (current_character == 0x0D) {
@@ -154,6 +168,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 13;
 			}
 			else {
+				printf("ERROR: Invalid response line character. / Missing <CR> after <+ response line>.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -163,6 +178,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 14;
 			}
 			else {
+				printf("ERROR: Missing <LF> after <+ response line> <CR>.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -175,6 +191,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 15;
 			}
 			else {
+				printf("ERROR: Missing +/ <CR> after <+ response line> <CR> <LF>.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -184,6 +201,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 16;
 			}
 			else {
+				printf("ERROR: Missing <CR>.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -196,6 +214,7 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 				state = 6;
 			}
 			else {
+				printf("ERROR: Missing OK/ ERROR after response line.\n");
 				return STATE_MACHINE_READY_WITH_ERROR;
 			}
 			break;
@@ -207,46 +226,15 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 	return STATE_MACHINE_NOT_READY;
 }
 
-void print_at_command() {
-	for (uint32_t i = 0; i < response.line_count; i++) {
-		printf("%s\n", response.data[i]);
+void print_AT_command() {
+	if (response.line_count == 0) {
+		printf("\nThe AT command response is empty.");
 	}
-	printf("\nEnd of AT command response.");
-}
-
-int main(int argc, char ** argv) {
-	if (argc < 2) {
-		printf("Wrong nr. of params.");
-		exit(1);
-	}
-
-	printf("argv[0]: %s\n", argv[0]);
-	printf("argv[1]: %s\n", argv[1]);
-	printf("argv[2]: %s\n", argv[2]);
-
-	printf("Parsing file: %s\n\n", argv[1]);
-	FILE *fp = fopen(argv[1], "rb");
-	if (!fp) printf("Cannot open the source file. (%s)", argv[1]);
-
-	response.line_count = 0;
-	
-	char ch;
-	while ((ch = fgetc(fp)) != EOF) {
-		if (at_command_parse(ch) == STATE_MACHINE_NOT_READY) continue;
-		if (at_command_parse(ch) == STATE_MACHINE_READY_OK) {
-			printf("State Machine response (1 - OK, 0 - ERROR): %d\n", response.ok);
-			break;
+	else {
+		printf("\nStart of AT command response:\n\n");
+		for (uint8_t i = 0; i < response.line_count; i++) {
+			printf("%s\n", response.data[i]);
 		}
-		else if (at_command_parse(ch) == STATE_MACHINE_READY_WITH_ERROR) {
-			printf("State Machine ready with ERROR.");
-			break;
-		}
+		printf("\nEnd of AT command response.");
 	}
-
-	if(response.ok == 1)
-		print_at_command();
-
-	fclose(fp);
-
-	return 0;
 }

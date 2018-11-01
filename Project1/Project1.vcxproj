@@ -113,10 +113,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ATHeader.h" />
+    <ClInclude Include="at.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ATParser.cpp" />
+    <ClCompile Include="at.c" />
+    <ClCompile Include="main.c" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
