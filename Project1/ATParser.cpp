@@ -8,218 +8,200 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 {
 	static uint32_t state			 = 0;
 	static uint32_t index_string_arr = 0;
-	static uint32_t index_chr        = 0;
-	//static uint32_t nr_of_line       = 0; arldy inside header?
 
-	switch (state)
-	{
+	switch (state){
+		case 0:{
+			if (current_character == 0x0D){ 
+				state = 1;
+			}
+			break;
+		}
+		case 1:{
+			if (current_character == 0x0A){
+				state = 2;
+			}
+			else{
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
+		}
+		case 2:{
+			if (current_character == 'O'){
+				state = 3;
+			}
+			else if (current_character == 'E'){
+				state = 6;
+			}
+			else if (current_character == '+') {
+				state = 12;
+			}
+			else{
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
+		}
 
-	case 0:
-	{
-		if (current_character == 0x0D){ 
-			state = 1;
+		// START OF
+		// OK <CR> <LF>
+		case 3:{
+			if (current_character == 'K') {
+				state = 4;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		break;
-	}
-	case 1:
-	{
-		if (current_character == 0x0A){
-			state = 2;
+		case 4:{
+			if (current_character == 0x0D) {
+				state = 5;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		else{
-			return STATE_MACHINE_READY_WITH_ERROR;
+		case 5:{
+			if (current_character == 0x0A) {
+				response.ok = 1;
+				return STATE_MACHINE_READY_OK;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		break;
-	}
-	case 2:
-	{
-		if (current_character == 'O'){
-			state = 3;
-		}
-		else if (current_character == 'E'){
-			state = 6;
-		}
-		else if (current_character == '+') {
-			state = 12;
-		}
-		else{
-			return STATE_MACHINE_READY_WITH_ERROR;
-		}
-		break;
-	}
+		// END OF
+		// OK <CR> <LF>
 
-	// START OF
-	// OK <CR> <LF>
-	case 3:
-	{
-		if (current_character == 'K') {
-			state = 4;
+		// START OF
+		// ERROR <CR> <LF>
+		case 6:{
+			if (current_character == 'R') {
+				state = 7;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
+		case 7:{
+			if (current_character == 'R') {
+				state = 8;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		break;
-	}
-	case 4:
-	{
-		if (current_character == 0x0D) {
-			state = 5;
+		case 8:{
+			if (current_character == 'O') {
+				state = 9;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
+		case 9:{
+			if (current_character == 'R') {
+				state = 10;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		break;
-	}
-	case 5:
-	{
-		if (current_character == 0x0A) {
-			response.ok = 1;
-			return STATE_MACHINE_READY_OK;
+		case 10:{
+			if (current_character == 0x0A) {
+				state = 11;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
+		case 11:{
+			if (current_character == 0x0D) {
+				response.ok = 0;
+				return STATE_MACHINE_READY_OK;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		break;
-	}
-	// END OF
-	// OK <CR> <LF>
+		// END OF
+		// ERROR <CR> <LF>
 
-	// START OF
-	// ERROR <CR> <LF>
-	case 6:
-	{
-		if (current_character == 'R') {
-			state = 7;
+		// START OF
+		// + <response line> <CR> <LF>
+		case 12:{
+			// >= 'space' && <+ '~'
+			if (current_character >= 32 && current_character <= 126) {
+				state = 12;
+				if (response.line_count < AT_COMMAND_MAX_LINES) {
+					response.data[response.line_count][index_string_arr] = current_character;
+					index_string_arr++;
+				}
+			}
+			else if (current_character == 0x0D) {
+				if (response.line_count < AT_COMMAND_MAX_LINES) {
+					response.data[response.line_count][index_string_arr] = '\0';
+					index_string_arr = 0;
+					response.line_count++;
+				}
+				state = 13;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
+		case 13: {
+			if (current_character == 0x0A) {
+				state = 14;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		break;
-	}
-	case 7:
-	{
-		if (current_character == 'R') {
-			state = 8;
+		case 14:{
+			if (current_character == '+') {
+				state = 12;
+			}
+			else if (current_character == 0x0D) {
+				state = 15;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
+		case 15:{
+			if (current_character == 0x0A) {
+				state = 16;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		break;
-	}
-	case 8:
-	{
-		if (current_character == 'O') {
-			state = 9;
+		case 16:{
+			if (current_character == 'O') {
+				state = 3;
+			}
+			else if (current_character == 'E') {
+				state = 6;
+			}
+			else {
+				return STATE_MACHINE_READY_WITH_ERROR;
+			}
+			break;
 		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
-		}
-		break;
-	}
-	case 9:
-	{
-		if (current_character == 'R') {
-			state = 10;
-		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
-		}
-		break;
-	}
-	case 10:
-	{
-		if (current_character == 0x0A) {
-			state = 11;
-		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
-		}
-		break;
-	}
-	case 11:
-	{
-		if (current_character == 0x0D) {
-			response.ok = 0;
-			return STATE_MACHINE_READY_OK;
-		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
-		}
-		break;
-	}
-	// END OF
-	// ERROR <CR> <LF>
-
-	// START OF
-	// + <response line> <CR> <LF>
-	case 12:
-	{
-		// >= 'space' && <+ '~'
-		if (current_character >= 32 && current_character <= 126) {
-			state = 12;
-			response.data[response.line_count][index_string_arr] = current_character;
-			index_string_arr++;
-		}
-		else if (current_character == 0x0D) {
-			response.data[response.line_count][index_string_arr] = '\0';
-			index_string_arr = 0;
-			response.line_count++;
-
-			state = 13;
-		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
-		}
-		break;
-	}
-	case 13: 
-	{
-		if (current_character == 0x0A) {
-			state = 14;
-		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
-		}
-		break;
-	}
-	case 14:
-	{
-		if (current_character == '+') {
-			state = 12;
-		}
-		else if (current_character == 0x0D) {
-			state = 15;
-		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
-		}
-		break;
-	}
-	case 15:
-	{
-		if (current_character == 0x0A) {
-			state = 16;
-		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
-		}
-		break;
-	}
-	case 16:
-	{
-		if (current_character == 'O') {
-			state = 3;
-		}
-		else if (current_character == 'E') {
-			state = 6;
-		}
-		else {
-			return STATE_MACHINE_READY_WITH_ERROR;
-		}
-		break;
-	}
-	// END OF
-	// + <response line> <CR> <LF>
+		// END OF
+		// + <response line> <CR> <LF>
 	}
 
 	return STATE_MACHINE_NOT_READY;
@@ -227,15 +209,6 @@ STATE_MACHINE_RETURN_VALUE at_command_parse(uint8_t current_character)
 
 void print_at_command() {
 	for (uint32_t i = 0; i < response.line_count; i++) {
-		/*
-		int j = 0;
-		while (response.data[i][j] != '\0') {
-			j++;
-			printf("%s", response.data[i][j]);
-		}
-		printf("\n");
-		// not sure why this fails
-		*/
 		printf("%s\n", response.data[i]);
 	}
 	printf("\nEnd of AT command response.");
