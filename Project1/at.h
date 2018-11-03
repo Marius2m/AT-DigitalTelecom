@@ -1,3 +1,7 @@
+/*Team Members:
+Ilienescu Anca
+Mircea Marius
+*/
 #include <stdint.h>
 
 #define AT_COMMAND_MAX_LINES 100

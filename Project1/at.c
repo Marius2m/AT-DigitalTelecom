@@ -1,3 +1,7 @@
+/*Team Members:
+Ilienescu Anca
+Mircea Marius
+*/
 #include <stdio.h>
 #include "at.h"
 
